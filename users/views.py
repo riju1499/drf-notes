@@ -24,20 +24,11 @@ class RegisterView(APIView):
     permission_classes = [AllowAny]
  
     def post(self, request):
-        """
-        Step-by-step flow:
-          1. Pass request.data (the incoming JSON) to the serializer
-          2. Call is_valid() — this runs all validation methods
-          3. If valid, call save() — this calls serializer.create()
-          4. Create a Token for the new user
-          5. Return the token so the client can start making authenticated requests
-        """
- 
-        # Step 1 & 2: Validate incoming data
+     
         serializer = RegisterSerializer(data=request.data)
  
         if not serializer.is_valid():
-            # serializer.errors contains a dict of field: [error messages]
+        
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
  
         # Step 3: Save creates the User in the database
