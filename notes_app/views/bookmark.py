@@ -4,7 +4,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 
 from notes_app.models import Note, Bookmark
-from notes_app.serializers.bookmark_serializers import BookmarkSerializer
+from notes_app.serializers.bookmark import BookmarkSerializer
 from notes_app.services.bookmark import create_bookmark, delete_bookmark
 
 

@@ -18,15 +18,15 @@ POST /api/auth/login/
 ### Notes
 GET    /api/notes/
 POST   /api/notes/create/
-GET    /api/notes/<id>/
-PUT    /api/notes/<id>/
-PATCH  /api/notes/<id>/
+GET    /api/notes/<id>/detail/
+PUT    /api/notes/<id>/update/
+PATCH  /api/notes/<id>/update/
 DELETE /api/notes/<id>/
 
 ### Bookmarks
 GET    /api/bookmarks/
-POST   /api/bookmarks/manage/
-DELETE /api/bookmarks/manage/
+POST   /api/bookmarks/create/
+DELETE /api/bookmarks/delete/
 
 ## How to Run
 
@@ -34,7 +34,6 @@ DELETE /api/bookmarks/manage/
 git clone <your-repo-link>
 cd drf-notes
 python -m venv venv
-source venv/bin/activate  # mac
-pip install -r requirements.txt
+source venv/bin/activate
 python manage.py migrate
 python manage.py runserver

@@ -5,56 +5,34 @@ from rest_framework.views import APIView
 from rest_framework import generics, status
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.filters import SearchFilter, OrderingFilter
+from django_filters.rest_framework import DjangoFilterBackend
+from notes_app.helpers import extract_note_fields
+
 
 from notes_app.models import Note
-from notes_app.serializers.note_serializers import (
+from notes_app.serializers.note import (
     NoteReadSerializer,
     NoteCreateSerializer,
     NoteUpdateSerializer,
 )
 from notes_app.services.note import create_note, update_note
+from notes_app.filters import NoteFilterSet
+
 SHORT_NOTE_MAX_WORDS = 50
-
-
-def get_filtered_notes(request):
-    queryset = Note.objects.filter(owner=request.user)
-
-    search = request.query_params.get('search', '').strip()
-    if search:
-        queryset = queryset.filter(
-            Q(title__icontains=search) | Q(content__icontains=search)
-        )
-
-    length_filter = request.query_params.get('filter', '').strip().lower()
-
-    if length_filter == 'short':
-        queryset = queryset.annotate(
-            content_len=Length('content')
-        ).filter(content_len__lt=SHORT_NOTE_MAX_WORDS * 6)
-
-    elif length_filter == 'long':
-        queryset = queryset.annotate(
-            content_len=Length('content')
-        ).filter(content_len__gte=SHORT_NOTE_MAX_WORDS * 6)
-
-    sort = request.query_params.get('sort', 'newest').strip().lower()
-
-    if sort == 'oldest':
-        queryset = queryset.order_by('created_at')
-    elif sort == 'updated':
-        queryset = queryset.order_by('-updated_at')
-    else:
-        queryset = queryset.order_by('-created_at')
-
-    return queryset
 
 
 class NoteListView(generics.ListAPIView):
     serializer_class = NoteReadSerializer
     permission_classes = [IsAuthenticated]
+    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
+    filterset_class = NoteFilterSet
+    search_fields = ['title', 'content']
+    ordering_fields = ['created_at', 'updated_at']
+    ordering = ['-created_at']
 
     def get_queryset(self):
-        return get_filtered_notes(self.request)
+        return Note.objects.filter(owner=self.request.user)
 
 
 class NoteCreateView(APIView):
@@ -65,7 +43,11 @@ class NoteCreateView(APIView):
         serializer = NoteCreateSerializer(data=request.data, context={'request': request})
         serializer.is_valid(raise_exception=True)
         
-        note = create_note(request.user, data = serializer.validated_data)
+        note = create_note(
+    user=request.user,
+    **extract_note_fields(serializer.validated_data)
+)
+
 
         response_serializer = NoteReadSerializer(note, context={'request': request})
         return Response(
@@ -99,7 +81,6 @@ class NoteUpdateView(APIView):
         serializer.is_valid(raise_exception=True)
         note = update_note(note, serializer.validated_data)
 
-
         response_serializer = NoteReadSerializer(note, context={'request': request})
         return Response(
             {"message": "Note updated successfully.", "note": response_serializer.data},
@@ -119,9 +100,11 @@ class NoteUpdateView(APIView):
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-        note = update_note(note, serializer.validated_data)
+        note = update_note(
+    note,
+    **extract_note_fields(serializer.validated_data)
+)
 
-        
 
         response_serializer = NoteReadSerializer(note, context={'request': request})
         return Response(

@@ -1,5 +1,5 @@
 from django.urls import path
-from notes_app.views.bookmark_views import BookmarkListView, BookmarkCreateView, BookmarkDeleteView
+from notes_app.views.bookmark import BookmarkListView, BookmarkCreateView, BookmarkDeleteView
  
 urlpatterns = [
     path('', BookmarkListView.as_view(), name='bookmark-list'),

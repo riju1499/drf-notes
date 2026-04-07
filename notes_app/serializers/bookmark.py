@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from notes_app.models import Note, Bookmark
-from notes_app.serializers.note_serializers import NoteReadSerializer
+from notes_app.serializers.note import NoteReadSerializer
 
 class BookmarkSerializer(serializers.ModelSerializer):
     note_id = serializers.PrimaryKeyRelatedField(

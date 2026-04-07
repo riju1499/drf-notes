@@ -1,5 +1,5 @@
 from django.urls import path
-from notes_app.views.note_views import (
+from notes_app.views.note import (
     NoteListView, NoteCreateView,
     NoteRetrieveView, NoteUpdateView, NoteDeleteView
 )

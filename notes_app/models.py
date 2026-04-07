@@ -9,10 +9,19 @@ class Note(models.Model):
     )
     title = models.CharField(max_length=255)
     content = models.TextField()
+    word_count = models.IntegerField(default=0, editable=False)
     photo=models.ImageField(upload_to='note_photos/' ,null=True, )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    
 
+    def save(self, *args, **kwargs):
+    
+        self.word_count = len(self.content.split()) if self.content else 0
+        super().save(*args, **kwargs)
+    
+    def __str__(self):
+        return f"{self.title} ({self.word_count} words)"
     class Meta:
         ordering = ['-created_at']
 
