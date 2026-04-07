@@ -7,7 +7,6 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.filters import SearchFilter, OrderingFilter
 from django_filters.rest_framework import DjangoFilterBackend
-from notes_app.helpers import extract_note_fields
 
 
 from notes_app.models import Note
@@ -18,6 +17,8 @@ from notes_app.serializers.note import (
 )
 from notes_app.services.note import create_note, update_note
 from notes_app.filters import NoteFilterSet
+from notes_app.selectors.get_note import get_note_by_id
+
 
 SHORT_NOTE_MAX_WORDS = 50
 
@@ -43,9 +44,12 @@ class NoteCreateView(APIView):
         serializer = NoteCreateSerializer(data=request.data, context={'request': request})
         serializer.is_valid(raise_exception=True)
         
+        data = serializer.validated_data
         note = create_note(
-    user=request.user,
-    **extract_note_fields(serializer.validated_data)
+            user=request.user,
+            title=data["title"],
+            content=data["content"],
+            photo=data.get("photo"),
 )
 
 
@@ -60,10 +64,9 @@ class NoteRetrieveView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, pk):
-        note = Note.objects.filter(pk=pk, owner=request.user).first()
-        if note is None:
-            return Response({"error": "Note not found."}, status=status.HTTP_404_NOT_FOUND)
+        note = get_note_by_id(pk, request.user)
 
+        
         serializer = NoteReadSerializer(note, context={'request': request})
         return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -72,39 +75,19 @@ class NoteUpdateView(APIView):
     permission_classes = [IsAuthenticated]
     parser_classes = [MultiPartParser, FormParser]
 
-    def put(self, request, pk):
-        note = Note.objects.filter(pk=pk, owner=request.user).first()
-        if note is None:
-            return Response({"error": "Note not found."}, status=status.HTTP_404_NOT_FOUND)
-
-        serializer = NoteUpdateSerializer(data=request.data, context={'request': request})
-        serializer.is_valid(raise_exception=True)
-        note = update_note(note, serializer.validated_data)
-
-        response_serializer = NoteReadSerializer(note, context={'request': request})
-        return Response(
-            {"message": "Note updated successfully.", "note": response_serializer.data},
-            status=status.HTTP_200_OK
-        )
-
-    def patch(self, request, pk):
-        note = Note.objects.filter(pk=pk, owner=request.user).first()
-        if note is None:
-            return Response({"error": "Note not found."}, status=status.HTTP_404_NOT_FOUND)
+    def update(self, request, pk, partial=False):
+        
+        note = get_note_by_id(pk, request.user)
 
         serializer = NoteUpdateSerializer(
             data=request.data,
-            partial=True,
+            partial=partial,
             context={'request': request}
         )
-        if not serializer.is_valid():
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        serializer.is_valid(raise_exception=True)
 
-        note = update_note(
-    note,
-    **extract_note_fields(serializer.validated_data)
-)
-
+       
+        note = update_note(note, **serializer.validated_data)
 
         response_serializer = NoteReadSerializer(note, context={'request': request})
         return Response(
@@ -112,14 +95,21 @@ class NoteUpdateView(APIView):
             status=status.HTTP_200_OK
         )
 
+    def put(self, request, pk):
+        
+        return self.update(request, pk, partial=False)
+
+    def patch(self, request, pk):
+       
+        return self.update(request, pk, partial=True)
 
 class NoteDeleteView(APIView):
     permission_classes = [IsAuthenticated]
 
     def delete(self, request, pk):
-        note = Note.objects.filter(pk=pk, owner=request.user).first()
-        if note is None:
-            return Response({"error": "Note not found."}, status=status.HTTP_404_NOT_FOUND)
+        note = get_note_by_id(pk, request.user)
+
+    
 
         note_title = note.title
         note.delete()

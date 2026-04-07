@@ -10,17 +10,8 @@ from .serializers import RegisterSerializer, LoginSerializer
  
  
 class RegisterView(APIView):
-    """
-    POST /api/auth/register/
-    ─────────────────────────
-    Creates a new user account and returns an authentication token.
  
-    permission_classes = [AllowAny]
-        This OVERRIDES the global IsAuthenticated setting.
-        Registration must be publicly accessible — no token needed yet!
-    """
- 
-    # Override global auth requirement — this endpoint is public
+
     permission_classes = [AllowAny]
  
     def post(self, request):
@@ -31,11 +22,9 @@ class RegisterView(APIView):
         
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
  
-        # Step 3: Save creates the User in the database
         user = serializer.save()
  
-        # Step 4: Create (or retrieve) a token for the new user
-        # get_or_create returns (object, created_boolean)
+        
         token, _ = Token.objects.get_or_create(user=user)
  
         # Step 5: Return success response with the token
@@ -50,27 +39,12 @@ class RegisterView(APIView):
  
  
 class LoginView(APIView):
-    """
-    POST /api/auth/login/
-    ──────────────────────
-    Authenticates a user and returns their token.
- 
-    We use Django's built-in authenticate() function which:
-    - Looks up the username in the database
-    - Verifies the password against the stored hash
-    - Returns the User object if valid, or None if not
-    """
+    
  
     permission_classes = [AllowAny]
  
     def post(self, request):
-        """
-        Step-by-step flow:
-          1. Validate that username and password are present
-          2. Use authenticate() to verify credentials
-          3. If valid, get or create a Token and return it
-          4. If invalid, return a 400 error
-        """
+       
  
         # Step 1: Validate that fields are present and non-empty
         serializer = LoginSerializer(data=request.data)
