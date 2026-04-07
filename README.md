@@ -31,7 +31,7 @@ DELETE /api/bookmarks/delete/
 ## How to Run
 
 ```bash
-git clone <your-repo-link>
+git clone https://github.com/riju1499/drf-notes.git
 cd drf-notes
 python -m venv venv
 source venv/bin/activate
