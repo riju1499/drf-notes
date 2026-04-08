@@ -12,9 +12,9 @@ def create_note(user, title, content, photo=None):
 
 def update_note(note, *, title=None, content=None, photo=None):
     if title is not None:
-        note.title = title
+        note.title = title.strip().title()
     if content is not None:
-        note.content = content
+        note.content = content.strip().capitalize()
     if photo is not None:
         note.photo = photo
 

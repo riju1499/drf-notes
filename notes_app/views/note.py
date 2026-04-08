@@ -60,7 +60,7 @@ class NoteCreateView(APIView):
         )
 
 
-class NoteRetrieveView(APIView):
+class NoteDetailView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, pk):
