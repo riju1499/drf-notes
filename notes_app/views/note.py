@@ -4,10 +4,9 @@ from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.views import APIView
 from rest_framework import generics, status
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, BasePermission
 from rest_framework.filters import SearchFilter, OrderingFilter
 from django_filters.rest_framework import DjangoFilterBackend
-
 
 from notes_app.models import Note
 from notes_app.serializers.note import (
@@ -17,10 +16,11 @@ from notes_app.serializers.note import (
 )
 from notes_app.services.note import create_note, update_note
 from notes_app.filters import NoteFilterSet
-from notes_app.selectors.get_note import get_note_by_id
+from notes_app.permissions import IsOwnerOrAdmin
 
 
 SHORT_NOTE_MAX_WORDS = 50
+
 
 
 class NoteListView(generics.ListAPIView):
@@ -50,8 +50,7 @@ class NoteCreateView(APIView):
             title=data["title"],
             content=data["content"],
             photo=data.get("photo"),
-)
-
+        )
 
         response_serializer = NoteReadSerializer(note, context={'request': request})
         return Response(
@@ -61,23 +60,37 @@ class NoteCreateView(APIView):
 
 
 class NoteDetailView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsOwnerOrAdmin]
 
     def get(self, request, pk):
-        note = get_note_by_id(pk, request.user)
+        try:
+            note = Note.objects.get(pk=pk)
+        except Note.DoesNotExist:
+            return Response(
+                {"error": "Note not found."},
+                status=status.HTTP_404_NOT_FOUND
+            )
 
-        
+        self.check_object_permissions(request, note)
+
         serializer = NoteReadSerializer(note, context={'request': request})
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class NoteUpdateView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsOwnerOrAdmin]
     parser_classes = [MultiPartParser, FormParser]
 
     def update(self, request, pk, partial=False):
-        
-        note = get_note_by_id(pk, request.user)
+        try:
+            note = Note.objects.get(pk=pk)
+        except Note.DoesNotExist:
+            return Response(
+                {"error": "Note not found."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        self.check_object_permissions(request, note)
 
         serializer = NoteUpdateSerializer(
             data=request.data,
@@ -86,7 +99,6 @@ class NoteUpdateView(APIView):
         )
         serializer.is_valid(raise_exception=True)
 
-       
         note = update_note(note, **serializer.validated_data)
 
         response_serializer = NoteReadSerializer(note, context={'request': request})
@@ -96,20 +108,25 @@ class NoteUpdateView(APIView):
         )
 
     def put(self, request, pk):
-        
         return self.update(request, pk, partial=False)
 
     def patch(self, request, pk):
-       
         return self.update(request, pk, partial=True)
 
+
 class NoteDeleteView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsOwnerOrAdmin]
 
     def delete(self, request, pk):
-        note = get_note_by_id(pk, request.user)
+        try:
+            note = Note.objects.get(pk=pk)
+        except Note.DoesNotExist:
+            return Response(
+                {"error": "Note not found."},
+                status=status.HTTP_404_NOT_FOUND
+            )
 
-    
+        self.check_object_permissions(request, note)
 
         note_title = note.title
         note.delete()
